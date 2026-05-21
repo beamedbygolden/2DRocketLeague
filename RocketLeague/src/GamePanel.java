@@ -26,12 +26,16 @@ public class GamePanel extends JPanel implements KeyListener {
 	double ballY = 450;
 	double ballVX = 0;
 	double ballVY = 0;
+	
+	//boost 
+	int boost1 = 100;
+	int boost2 = 100;
 
     /**
      * Constructor
      */
     public GamePanel() {
-	 int ground = 420; // ground level for cars
+	 int ground = 450; // ground level for cars
 
         p1 = new Car(300, ground, ground, Color.BLUE); // creates player 1 car
         p2 = new Car(900, ground, ground, Color.ORANGE); // creates player 2 car
@@ -54,7 +58,7 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     public void updateGame() {
     	checkGoal();
-
+    	
         // update players
         p1.update();
         p2.update();
@@ -137,7 +141,7 @@ double gravity = 0.15;
 
     double dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < 60) {
+    if (dist < 150) {
 
         // normalize direction
         double nx = dx / dist;
@@ -219,7 +223,7 @@ double gravity = 0.15;
         p2.draw(g2);
     }
 
-    // Key inputs ( just keyboard for now)
+    // Key inputs (just keyboard for now)
     @Override
     public void keyPressed(KeyEvent e) {
 
@@ -228,10 +232,11 @@ double gravity = 0.15;
             // Player 1 (WASD) to move
             case KeyEvent.VK_A -> p1.left = true;
             case KeyEvent.VK_D -> p1.right = true;
-
             // Player 2 (arrows) to move
             case KeyEvent.VK_LEFT -> p2.left = true;
             case KeyEvent.VK_RIGHT -> p2.right = true;
+            
+            
         }
     }
 

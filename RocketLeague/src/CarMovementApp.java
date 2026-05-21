@@ -1,10 +1,11 @@
-import de.gurkenlabs.input4j.InputDevices;
-import de.gurkenlabs.input4j.components.XInput;
-
+import de.gurkenlabs.input4j.*;
 public class CarMovementApp {
-	private static float stickX = 0f;
-	 private static float stickY = 0f;
-	 private static double carAngle = 0.0;
-	
-	
+	public static void main(String[] args) throws Exception {
+
+        try (var devices = InputDevices.init()) {
+
+            System.out.println(devices.getAll());
+        }
+    }
+
 }

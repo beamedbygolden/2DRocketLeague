@@ -6,6 +6,8 @@ public class Car {
     boolean left, right, up, down; // car movements
     Color color; // color
     int groundY; // ground (where car stays)
+    int boost = 100;
+    int boostcost = 10;
 
     /**
      * Constructor
@@ -26,6 +28,10 @@ public class Car {
         if (left)  x -= speed;
         if (right) x += speed;
         y = groundY; // locks car to ground
+        if (boost > boost-boostcost) {
+        	speed *= 1.5; 
+        	boost-=boostcost;
+        }
     }
 
     /**
@@ -58,8 +64,14 @@ public class Car {
         
         // Boost flame (visual only for now)
         g2.setColor(Color.ORANGE);
+        if(left) {
+        	 g2.fillPolygon(
+                     new int[]{x + 120, x + 150, x + 120},
+                     new int[]{y + 10, y + 17, y + 25},3 );	
+        }
+        if(right)
         g2.fillPolygon(
-                new int[]{x + 120, x + 150, x + 120},
+                new int[]{x, x -30, x},
                 new int[]{y + 10, y + 17, y + 25},
                 3
         );
