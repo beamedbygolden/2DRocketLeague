@@ -15,7 +15,7 @@ public class GamePanel extends JPanel implements KeyListener {
     final int LEFT = 120; 
     final int RIGHT = 1180; 
     final int TOP = 110; 
-    final int BOTTOM = 490;
+    final int BOTTOM = 590;
     //Goal parameters
     final int GOAL_TOP = 250; 
 	final int GOAL_BOTTOM = 400;
@@ -134,26 +134,38 @@ double gravity = 0.15;
         if (c.y > c.groundY) c.y = c.groundY;
     }
     
-   public void handleCollision(Car c) {
+    public void handleCollision(Car c) {
 
-    double dx = ballX - c.x;
-    double dy = ballY - c.y;
+        // center of car
+        double carCenterX = c.x + 60;
+        double carCenterY = c.y + 20;
 
-    double dist = Math.sqrt(dx * dx + dy * dy);
+        // direction from car -> ball
+        double dx = ballX - carCenterX;
+        double dy = ballY - carCenterY;
 
-    if (dist < 150) {
+        double dist = Math.sqrt(dx * dx + dy * dy);
 
-        // normalize direction
-        double nx = dx / dist;
-        double ny = dy / dist;
+        // collision radius
+        double radius = 70;
 
-        // apply consistent force
-        double power = 6;
+        if (dist < radius) {
 
-        ballVX += nx * power;
-        ballVY += ny * power;
+            // normalize
+            double nx = dx / dist;
+            double ny = dy / dist;
+
+            // hit strength
+            double impact = Math.abs(c.vx) * 0.8 + 5;
+
+            ballVX += nx * impact;
+            ballVY += ny * impact;
+
+            // prevent sticking
+            ballX += nx * 5;
+            ballY += ny * 5;
+        }
     }
-}
     
     public void checkGoal() {
     // Left goal (Player 2 scores)

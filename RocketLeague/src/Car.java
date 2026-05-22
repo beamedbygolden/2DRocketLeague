@@ -8,6 +8,7 @@ public class Car {
     int groundY; // ground (where car stays)
     int boost = 100;
     int boostcost = 10;
+    double vx = 0;
 
     /**
      * Constructor
@@ -24,14 +25,18 @@ public class Car {
      */
     public void update() {
 
-        //Horizontal movement
-        if (left)  x -= speed;
-        if (right) x += speed;
-        y = groundY; // locks car to ground
-        if (boost > boost-boostcost) {
-        	speed *= 1.5; 
-        	boost-=boostcost;
-        }
+        // acceleration
+        if (left)  vx -= 0.5;
+        if (right) vx += 0.5;
+
+        // friction
+        vx *= 0.92;
+
+        // apply velocity
+        x += vx;
+
+        // keep on ground
+        y = groundY;
     }
 
     /**
@@ -62,18 +67,26 @@ public class Car {
         g2.fillOval(x + 92, y + 32, 12, 12);
 
         
-        // Boost flame (visual only for now)
+        //boost flame
         g2.setColor(Color.ORANGE);
-        if(left) {
-        	 g2.fillPolygon(
-                     new int[]{x + 120, x + 150, x + 120},
-                     new int[]{y + 10, y + 17, y + 25},3 );	
-        }
-        if(right)
-        g2.fillPolygon(
-                new int[]{x, x -30, x},
+        // moving right
+        if (vx > 1) {
+
+            g2.fillPolygon(
+                new int[]{x, x - 30, x},
                 new int[]{y + 10, y + 17, y + 25},
                 3
-        );
+            );
+        }
+
+        // moving left
+        if (vx < -1) {
+
+            g2.fillPolygon(
+                new int[]{x + 120, x + 150, x + 120},
+                new int[]{y + 10, y + 17, y + 25},
+                3
+            );
+        }
     }
 }
