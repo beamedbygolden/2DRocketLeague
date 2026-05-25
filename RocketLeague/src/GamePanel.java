@@ -1,49 +1,57 @@
 import javax.swing.*;
-import javax.swing.text.TabStop;
 import java.awt.*;
 import java.awt.event.*;
+import net.java.games.input.Controller;
+import net.java.games.input.ControllerEnvironment;
+import net.java.games.input.Component;
 
 public class GamePanel extends JPanel implements KeyListener {
     Car p1; // player 1 car 
     Car p2; // player 2 car
     
-    //player scores
-	int scoreP1 = 0;
-	int scoreP2 = 0;
-	
-	//Field parameters
+    // Controller inputs
+    private Controller gamepad = null;
+    
+    // player scores
+    int scoreP1 = 0;
+    int scoreP2 = 0;
+    
+    // Field parameters
     final int LEFT = 120; 
     final int RIGHT = 1180; 
     final int TOP = 110; 
     final int BOTTOM = 590;
-    //Goal parameters
+    
+    // Goal parameters
     final int GOAL_TOP = 250; 
-	final int GOAL_BOTTOM = 400;
-	final int LEFT_GOAL_X = 120;
-	final int RIGHT_GOAL_X = 1180;
-	// Ball parameters
-	double ballX = 650;
-	double ballY = 450;
-	double ballVX = 0;
-	double ballVY = 0;
-	
-	//boost 
-	int boost1 = 100;
-	int boost2 = 100;
+    final int GOAL_BOTTOM = 400;
+    final int LEFT_GOAL_X = 120;
+    final int RIGHT_GOAL_X = 1180;
+    
+    // Ball parameters
+    double ballX = 650;
+    double ballY = 450;
+    double ballVX = 0;
+    double ballVY = 0;
+    
+    // boost 
+    int boost1 = 100;
+    int boost2 = 100;
 
     /**
      * Constructor
      */
     public GamePanel() {
-	 int ground = 450; // ground level for cars
+        int ground = 450; // ground level for cars
 
         p1 = new Car(300, ground, ground, Color.BLUE); // creates player 1 car
         p2 = new Car(900, ground, ground, Color.ORANGE); // creates player 2 car
 
-       
         setFocusable(true); // sets frame on game 
         addKeyListener(this); // checks for key inputs
 
+        // Initialize Controller
+        initController();
 
         Timer timer = new Timer(16, e -> { // game loop
             updateGame();
@@ -54,20 +62,65 @@ public class GamePanel extends JPanel implements KeyListener {
     }
 
     /**
+     * Finds and initializes a connected controller
+     * used jinput plugin library (very complex but used ai to understand library plugin and used jinput guide for methods)
+     */
+    private void initController() {
+        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers(); // gets controllers for game ( used jinput guide for this)
+
+        for (Controller c : controllers) {
+            if (c.getType() == Controller.Type.GAMEPAD ||  c.getType() == Controller.Type.STICK) {
+                gamepad = c;
+                System.out.println("Connected: " + c.getName());
+                return;
+            }
+        }
+
+        System.out.println("No controller found.");
+    }
+
+    /**
+     * Reads analog stick status from the gamepad and updates player controls
+     */
+    private void pollControllerInputs() {
+        if (gamepad == null) {
+            return;
+        }
+        gamepad.poll();
+        for (Component c : gamepad.getComponents()) {
+            if (c.getName().equals("X Axis")) {
+                double x = c.getPollData();
+                if (x < -0.2) {
+                    p1.left = true;
+                } else {
+                    p1.left = false;
+                }
+                if (x > 0.2) {
+                    p1.right = true;
+                } else {
+                    p1.right = false;
+                }	
+            }
+        }
+    }
+    /**
      * UPDATE GAME LOGIC
      */
     public void updateGame() {
-    	checkGoal();
-    	
+        checkGoal();
+        
+        // Read gamepad movements before car updates positions
+        pollControllerInputs();
+        
         // update players
         p1.update();
         p2.update();
         
         // checks for car hitting ball
         handleCollision(p1);
-		handleCollision(p2);
+        handleCollision(p2);
         
-        // update ball physic
+        // update ball physics
         updateBall();
 
         // keep inside field
@@ -75,58 +128,57 @@ public class GamePanel extends JPanel implements KeyListener {
         clamp(p2);
     }
     
- public void updateBall() {
-double gravity = 0.15;
-    // gravity pulls ball down
-    ballVY += gravity;
+    public void updateBall() {
+        double gravity = 0.15;
+        // gravity pulls ball down
+        ballVY += gravity;
 
-    // apply movement
-    ballX += ballVX;
-    ballY += ballVY;
+        // apply movement
+        ballX += ballVX;
+        ballY += ballVY;
 
-    // friction
-    ballVX *= 0.98;
-    ballVY *= 0.98;
+        // friction
+        ballVX *= 0.98;
+        ballVY *= 0.98;
 
-    // ground bounce
-    if (ballY > BOTTOM - 20) {
-        ballY = BOTTOM - 20;
-        ballVY *= -0.6;
+        // ground bounce
+        if (ballY > BOTTOM - 20) {
+            ballY = BOTTOM - 20;
+            ballVY *= -0.6;
+        }
+
+        // ceiling
+        if (ballY < TOP) {
+            ballY = TOP;
+            ballVY *= -0.6;
+        }
+
+        // walls
+        if (ballX < LEFT) {
+            ballX = LEFT;
+            ballVX *= -0.6;
+        }
+
+        if (ballX > RIGHT) {
+            ballX = RIGHT;
+            ballVX *= -0.6;
+        }
     }
-
-    // ceiling
-    if (ballY < TOP) {
-        ballY = TOP;
-        ballVY *= -0.6;
-    }
-
-    // walls
-    if (ballX < LEFT) {
-        ballX = LEFT;
-        ballVX *= -0.6;
-    }
-
-    if (ballX > RIGHT) {
-        ballX = RIGHT;
-        ballVX *= -0.6;
-    }
-}
     
     /**
-	* Resets ball after goals
-	*/
-   public void resetBall() {
-    ballX = 650;
-    ballY = 300;
-    ballVX = 0;
-    ballVY = 0;
-}
+    * Resets ball after goals
+    */
+    public void resetBall() {
+        ballX = 650;
+        ballY = 300;
+        ballVX = 0;
+        ballVY = 0;
+    }
 
     /**
      * Keeps car inside the field 
      */
     public void clamp(Car c) {
-
         if (c.x < LEFT) c.x = LEFT;
         if (c.x > RIGHT - 120) c.x = RIGHT - 120;
 
@@ -135,7 +187,6 @@ double gravity = 0.15;
     }
     
     public void handleCollision(Car c) {
-
         // center of car
         double carCenterX = c.x + 60;
         double carCenterY = c.y + 20;
@@ -150,7 +201,6 @@ double gravity = 0.15;
         double radius = 70;
 
         if (dist < radius) {
-
             // normalize
             double nx = dx / dist;
             double ny = dy / dist;
@@ -168,38 +218,29 @@ double gravity = 0.15;
     }
     
     public void checkGoal() {
-    // Left goal (Player 2 scores)
-    if (ballX < LEFT_GOAL_X &&
-        ballY > GOAL_TOP &&
-        ballY < GOAL_BOTTOM) {
+        // Left goal (Player 2 scores)
+        if (ballX < LEFT_GOAL_X && ballY > GOAL_TOP && ballY < GOAL_BOTTOM) {
+            scoreP2++;
+            resetBall();
+        }
 
-        scoreP2++;
-        resetBall();
+        // Right goal (Player 1 scores)
+        if (ballX > RIGHT_GOAL_X && ballY > GOAL_TOP && ballY < GOAL_BOTTOM) {
+            scoreP1++;
+            resetBall();
+        }
     }
-
-    //
-    // Right goal (Player 1 scores)
-    // 
-    if (ballX > RIGHT_GOAL_X &&
-        ballY > GOAL_TOP &&
-        ballY < GOAL_BOTTOM) {
-
-        scoreP1++;
-        resetBall();
-    }
-}
 
     /**
      * Draws field, background, and players 
      */
     @Override
     protected void paintComponent(Graphics g) {
-
         super.paintComponent(g);
 
         Graphics2D g2 = (Graphics2D) g;
 
-        // smooth graphics (60 fps) // took from past codes but was initially explained by ai
+        // smooth graphics
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         // Background 
@@ -210,61 +251,54 @@ double gravity = 0.15;
         g2.setColor(new Color(0, 255, 120, 30));
         g2.fillRect(LEFT, TOP, RIGHT - LEFT, BOTTOM - TOP);
         
-        //Score Board
+        // Score Board
         g2.setColor(Color.WHITE);
-		g2.setFont(new Font("Arial", Font.BOLD, 30));
-		g2.drawString("BLUE: " + scoreP1, 500, 50);
-		g2.drawString("ORANGE: " + scoreP2, 700, 50);
-		
-		//ball
-		int ballSize = 35;
-		g2.setColor(Color.WHITE);
-		g2.fillOval((int) ballX - ballSize / 2, (int) ballY - ballSize / 2, ballSize, ballSize);
-		g2.setColor(Color.BLACK);
-		g2.drawOval((int) ballX - ballSize / 2, (int) ballY - ballSize / 2, ballSize, ballSize);
-		
-		//goal zones
-		g2.setColor(new Color(0, 140, 255, 80));
-		g2.fillRect(120, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
-		g2.setColor(new Color(255, 140, 0, 80));
-		g2.fillRect(1180, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
-
+        g2.setFont(new Font("Arial", Font.BOLD, 30));
+        g2.drawString("BLUE: " + scoreP1, 500, 50);
+        g2.drawString("ORANGE: " + scoreP2, 700, 50);
+        
+        // ball
+        int ballSize = 35;
+        g2.setColor(Color.WHITE);
+        g2.fillOval((int) ballX - ballSize / 2, (int) ballY - ballSize / 2, ballSize, ballSize);
+        g2.setColor(Color.BLACK);
+        g2.drawOval((int) ballX - ballSize / 2, (int) ballY - ballSize / 2, ballSize, ballSize);
+        
+        // goal zones
+        g2.setColor(new Color(0, 140, 255, 80));
+        g2.fillRect(120, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
+        g2.setColor(new Color(255, 140, 0, 80));
+        g2.fillRect(1180, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
 
         // Draw the players
         p1.draw(g2);
         p2.draw(g2);
     }
 
-    // Key inputs (just keyboard for now)
+    // Key inputs (Hybrid control option remains active!)
     @Override
     public void keyPressed(KeyEvent e) {
 
-        switch (e.getKeyCode()) {
-
-            // Player 1 (WASD) to move
-            case KeyEvent.VK_A -> p1.left = true;
-            case KeyEvent.VK_D -> p1.right = true;
-            // Player 2 (arrows) to move
-            case KeyEvent.VK_LEFT -> p2.left = true;
-            case KeyEvent.VK_RIGHT -> p2.right = true;
-            
-            
-        }
+        if (e.getKeyCode() == KeyEvent.VK_A) 
+            p1.left = true;
+        if (e.getKeyCode() == KeyEvent.VK_D)
+            p1.right = true;
+        if (e.getKeyCode() == KeyEvent.VK_LEFT) 
+            p2.left = true;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+            p2.right = true;
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-
-        switch (e.getKeyCode()) {
-
-            // Player 1 
-            case KeyEvent.VK_A -> p1.left = false;
-            case KeyEvent.VK_D -> p1.right = false;
-
-            // Player 2 
-            case KeyEvent.VK_LEFT -> p2.left = false;
-            case KeyEvent.VK_RIGHT -> p2.right = false;
-        }
+    	if (e.getKeyCode() == KeyEvent.VK_A) 
+            p1.left = false;
+        if (e.getKeyCode() == KeyEvent.VK_D) 
+            p1.right = false;
+        if (e.getKeyCode() == KeyEvent.VK_LEFT) 
+            p2.left = false;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) 
+            p2.right = false;
     }
 
     @Override

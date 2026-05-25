@@ -51,16 +51,14 @@ public class MenuPanel extends JPanel implements MouseListener {
             JOptionPane.showMessageDialog(
                 this,
                 "CONTROLLER SETUP INFO\n\n" +
-                "• Controllers only work using an emulator (DS4Windows)\n\n" +
+                "• Controllers only work using jinput" +
                 "PLAYER 1:\n" +
                 "• Use WASD on keyboard\n\n" +
                 "PLAYER 2:\n" +
                 "• Use Arrow Keys\n\n" +
                 "CONTROLLER SETUP:\n" +
-                "• In DS4Windows, map your controller buttons to WASD or Arrow Keys\n" +
                 "• Left stick = movement\n" +
-                "• R2/L2 = boost (optional)\n\n" +
-                "Make sure DS4Windows is running before launching the game.",
+                "• R2/L2 = boost (optional)\n\n",
                 
                 "Controls Info",
                 JOptionPane.INFORMATION_MESSAGE
