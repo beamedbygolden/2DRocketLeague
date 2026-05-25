@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.QuadCurve2D;
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Component;
@@ -8,6 +9,9 @@ import net.java.games.input.Component;
 public class GamePanel extends JPanel implements KeyListener {
     Car p1; // player 1 car 
     Car p2; // player 2 car
+    
+    //image for background of game might add more later 
+    Image arenaBG;
     
     // Controller inputs
     private Controller gamepad = null;
@@ -17,16 +21,16 @@ public class GamePanel extends JPanel implements KeyListener {
     int scoreP2 = 0;
     
     // Field parameters
-    final int LEFT = 120; 
-    final int RIGHT = 1180; 
-    final int TOP = 110; 
+    final int LEFT = 100; 
+    final int RIGHT = 1230; 
+    final int TOP = 0; 
     final int BOTTOM = 590;
     
     // Goal parameters
-    final int GOAL_TOP = 250; 
-    final int GOAL_BOTTOM = 400;
-    final int LEFT_GOAL_X = 120;
-    final int RIGHT_GOAL_X = 1180;
+    final int GOAL_TOP = 170; 
+    final int GOAL_BOTTOM = 380;
+    final int LEFT_GOAL_X = 0;
+    final int RIGHT_GOAL_X = 1280;
     
     // Ball parameters
     double ballX = 650;
@@ -42,7 +46,10 @@ public class GamePanel extends JPanel implements KeyListener {
      * Constructor
      */
     public GamePanel() {
-        int ground = 450; // ground level for cars
+    	//background image
+    	arenaBG = new ImageIcon("Arena1.png").getImage(); 
+    	
+        int ground = 550; // ground level for cars
 
         p1 = new Car(300, ground, ground, Color.BLUE); // creates player 1 car
         p2 = new Car(900, ground, ground, Color.ORANGE); // creates player 2 car
@@ -237,19 +244,45 @@ public class GamePanel extends JPanel implements KeyListener {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
+        // drawing background image of arena
+        g.drawImage(arenaBG, 0, 0, getWidth(), getHeight(), this);
+        // changed into graphics g2 so I can rotate care and use other additional methods
         Graphics2D g2 = (Graphics2D) g;
 
         // smooth graphics
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         // Background 
-        g2.setColor(new Color(30, 30, 40));
-        g2.fillRect(0, 0, getWidth(), getHeight()); 
+       // g2.setColor(new Color(30, 30, 40));
+       // g2.fillRect(0, 0, getWidth(), getHeight()); 
         
         // Field 
         g2.setColor(new Color(0, 255, 120, 30));
         g2.fillRect(LEFT, TOP, RIGHT - LEFT, BOTTOM - TOP);
+
+        //Right Ramp
+        int[] x = { 1120, 1190, 1220};
+        int[] y = { 580, 550, 390};
+
+        g2.setColor(Color.ORANGE);
+        g2.setStroke(new BasicStroke(20)); // changes thickness of ramp ( just used for tweaking ramp zones right now) 
+
+        for (int i = 0; i < x.length - 1; i++) { 
+            g2.drawLine(x[i], y[i], x[i + 1], y[i + 1]); //  uses x array and y array to create a curve
+        }
+     // Left Ramp
+        int[] xLeft = { 180, 110, 80};
+        int[] yLeft = { 580, 550, 390};
+
+        g2.setColor(Color.BLUE);
+        g2.setStroke(new BasicStroke(20)); // ramp thickness
+
+        for (int i = 0; i < xLeft.length - 1; i++) {
+            g2.drawLine(
+                xLeft[i], yLeft[i],
+                xLeft[i + 1], yLeft[i + 1]
+            );
+        }
         
         // Score Board
         g2.setColor(Color.WHITE);
@@ -265,7 +298,7 @@ public class GamePanel extends JPanel implements KeyListener {
         g2.drawOval((int) ballX - ballSize / 2, (int) ballY - ballSize / 2, ballSize, ballSize);
         
         // goal zones
-        g2.setColor(new Color(0, 140, 255, 80));
+        g2.setColor(Color.red);
         g2.fillRect(120, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
         g2.setColor(new Color(255, 140, 0, 80));
         g2.fillRect(1180, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
