@@ -21,7 +21,7 @@ public class Car {
     }
 
     /**
-     * UPDATE = movement + ground physics
+     * Update movement + ground physics
      */
     public void update() {
 

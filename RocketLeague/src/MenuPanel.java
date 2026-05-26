@@ -26,8 +26,8 @@ public class MenuPanel extends JPanel implements MouseListener {
         g2.drawImage(bg, 0, 0, getWidth(), getHeight(), this);
         
         //dummy testers
-        //g2.fillRect(playButton.x, playButton.y, playButton.width, playButton.height);
-        //g2.fillRect(infoButton.x, infoButton.y, infoButton.width, infoButton.height);
+        g2.fillRect(playButton.x, playButton.y, playButton.width, playButton.height);
+        g2.fillRect(infoButton.x, infoButton.y, infoButton.width, infoButton.height);
     }
 
     @Override

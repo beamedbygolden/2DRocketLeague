@@ -6,6 +6,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="RocketLeague/src"/>
-	<classpathentry kind="lib" path="C:/Users/inghilterraa/Downloads/input4j-1.2.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/inghilterraa/Downloads/jinput-2.0.10.jar"/>
+	<classpathentry kind="lib" path="C:/Users/inghilterraa/Downloads/jinput-2.0.10-natives-all.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
