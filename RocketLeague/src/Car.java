@@ -3,6 +3,7 @@ import java.awt.*;
 public class Car {
     int x, y; // position
     int speed = 6; // Movement speed
+    int startx, starty;
     boolean left, right, up, down; // car movements
     Color color; // color
     int groundY; // ground (where car stays)
@@ -18,6 +19,8 @@ public class Car {
         this.y = y;
         this.groundY = groundY;
         this.color = color;
+        this.startx = x;
+        this.starty = y;
     }
 
     /**
@@ -37,6 +40,18 @@ public class Car {
 
         // keep on ground
         y = groundY;
+    }
+    /**
+     * resets car value 
+     */
+    public void reset() {
+        x = startx;
+        y = starty;
+        vx = 0; 
+        left = false;
+        right = false;
+        up = false;
+        down = false;
     }
 
     /**

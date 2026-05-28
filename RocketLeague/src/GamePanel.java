@@ -2,6 +2,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.QuadCurve2D;
+import java.lang.reflect.Field;
+import java.util.concurrent.Delayed;
+
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Component;
@@ -10,11 +13,15 @@ public class GamePanel extends JPanel implements KeyListener {
     Car p1; // player 1 car 
     Car p2; // player 2 car
     
+    //goal scored boolean
+    private boolean goalscored = false;
+    
     //image for background of game might add more later 
     Image arenaBG;
     
     // Controller inputs
-    private Controller gamepad = null;
+    private Controller gamepad1 = null;
+    private Controller gamepad2 = null;
     
     // player scores
     int scoreP1 = 0;
@@ -24,13 +31,19 @@ public class GamePanel extends JPanel implements KeyListener {
     final int LEFT = 100; 
     final int RIGHT = 1230; 
     final int TOP = 0; 
-    final int BOTTOM = 590;
+    final int BOTTOM = 450;
     
-    // Goal parameters
-    final int GOAL_TOP = 170; 
-    final int GOAL_BOTTOM = 380;
-    final int LEFT_GOAL_X = 0;
-    final int RIGHT_GOAL_X = 1280;
+    // Goal parameters ( for map I want to use)
+    //final int GOAL_TOP = 170; 
+    //final int GOAL_BOTTOM = 380;
+    //final int LEFT_GOAL_X = 0;
+    //final int RIGHT_GOAL_X = 1280;
+    
+    //Goal parameters for tester map
+    final int GOAL_TOP = 350; 
+    final int GOAL_BOTTOM = 450;
+    final int LEFT_GOAL_X = 250;
+    final int RIGHT_GOAL_X = 1000;
     
     // Ball parameters
     double ballX = 650;
@@ -41,15 +54,19 @@ public class GamePanel extends JPanel implements KeyListener {
     // boost 
     int boost1 = 100;
     int boost2 = 100;
+    
+    // time interval of frames 
+    int delay = 4000;
 
     /**
      * Constructor
      */
     public GamePanel() {
     	//background image
-    	arenaBG = new ImageIcon("Arena1.png").getImage(); 
-    	
-        int ground = 550; // ground level for cars
+    	//arenaBG = new ImageIcon("Arena1.png").getImage(); 
+    	arenaBG = new ImageIcon("testarena.png").getImage(); 
+        //int ground = 550; // ground level for cars
+    	int ground = 400;
 
         p1 = new Car(300, ground, ground, Color.BLUE); // creates player 1 car
         p2 = new Car(900, ground, ground, Color.ORANGE); // creates player 2 car
@@ -63,6 +80,7 @@ public class GamePanel extends JPanel implements KeyListener {
         Timer timer = new Timer(16, e -> { // game loop
             updateGame();
             repaint();
+            delay+=16;
         });
 
         timer.start();
@@ -74,42 +92,73 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     private void initController() {
         Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers(); // gets controllers for game ( used jinput guide for this)
-
+        int found = 0;
         for (Controller c : controllers) {
             if (c.getType() == Controller.Type.GAMEPAD ||  c.getType() == Controller.Type.STICK) {
-                gamepad = c;
-                System.out.println("Connected: " + c.getName());
-                return;
+            	  if (found == 0) {
+                      gamepad1 = c;
+                      System.out.println("Player 1 Controller: " + c.getName());
+                      found++;
+                  }
+                  else if (found == 1) {
+                      gamepad2 = c;
+                      System.out.println("Player 2 Controller: " + c.getName());
+                      break;
+                  }
             }
+      	 
         }
 
-        System.out.println("No controller found.");
+        System.out.println("P1 = " + gamepad1);
+    	  System.out.println("P2 = " + gamepad2);
     }
-
+    
     /**
      * Reads analog stick status from the gamepad and updates player controls
      */
     private void pollControllerInputs() {
-        if (gamepad == null) {
-            return;
-        }
-        gamepad.poll();
-        for (Component c : gamepad.getComponents()) {
-            if (c.getName().equals("X Axis")) {
-                double x = c.getPollData();
-                if (x < -0.2) {
-                    p1.left = true;
-                } else {
-                    p1.left = false;
+        if (delay >= 4000) {
+    	if (gamepad1 != null) {
+            gamepad1.poll();
+            for (Component c : gamepad1.getComponents()) {
+            	 if (c.getIdentifier() == Component.Identifier.Axis.X) {
+             	    double x = c.getPollData();
+                    if (x < -0.2) {
+                        p1.left = true;
+                    } else {
+                        p1.left = false;
+                    }
+                    if (x > 0.2) {
+                        p1.right = true;
+                    } else {
+                        p1.right = false;
+                    }	
                 }
-                if (x > 0.2) {
-                    p1.right = true;
-                } else {
-                    p1.right = false;
-                }	
             }
+            	
         }
+        if (gamepad2 != null) {
+            gamepad2.poll();
+            for (Component c : gamepad2.getComponents()) {
+            	 if (c.getIdentifier() == Component.Identifier.Axis.X) {
+            	    double x = c.getPollData();
+                    if (x < -0.2) {
+                        p2.left = true;
+                    } else {
+                        p2.left = false;
+                    }
+                    if (x > 0.2) {
+                        p2.right = true;
+                    } else {
+                        p2.right = false;
+                    }	
+                }
+            }
+            	
+        }
+       }
     }
+
     /**
      * UPDATE GAME LOGIC
      */
@@ -134,6 +183,7 @@ public class GamePanel extends JPanel implements KeyListener {
         clamp(p1);
         clamp(p2);
     }
+
     
     public void updateBall() {
         double gravity = 0.15;
@@ -176,10 +226,10 @@ public class GamePanel extends JPanel implements KeyListener {
     * Resets ball after goals
     */
     public void resetBall() {
-        ballX = 650;
-        ballY = 300;
-        ballVX = 0;
-        ballVY = 0;
+    	   ballX = 650;
+    	   ballY = 450;
+    	   ballVX = 0;
+    	   ballVY = 0;
     }
 
     /**
@@ -213,28 +263,39 @@ public class GamePanel extends JPanel implements KeyListener {
             double ny = dy / dist;
 
             // hit strength
-            double impact = Math.abs(c.vx) * 0.8 + 5;
+            double impact = Math.abs(c.vx) * 1 + 5;
 
             ballVX += nx * impact;
             ballVY += ny * impact;
 
             // prevent sticking
-            ballX += nx * 5;
-            ballY += ny * 5;
+            //ballX += nx * 5;
+            //ballY += ny * 5;
         }
     }
-    
+    public void resetplayers() {
+        p1.reset();
+        p2.reset();
+        p1.vx = 0;
+        p2.vx = 0;
+    }
     public void checkGoal() {
         // Left goal (Player 2 scores)
         if (ballX < LEFT_GOAL_X && ballY > GOAL_TOP && ballY < GOAL_BOTTOM) {
             scoreP2++;
             resetBall();
+            resetplayers();
+            goalscored = true;
+            delay = 0;
         }
 
         // Right goal (Player 1 scores)
         if (ballX > RIGHT_GOAL_X && ballY > GOAL_TOP && ballY < GOAL_BOTTOM) {
             scoreP1++;
             resetBall();
+            resetplayers();
+            goalscored = true;
+            delay = 0;
         }
     }
 
@@ -257,19 +318,19 @@ public class GamePanel extends JPanel implements KeyListener {
        // g2.fillRect(0, 0, getWidth(), getHeight()); 
         
         // Field 
-        g2.setColor(new Color(0, 255, 120, 30));
-        g2.fillRect(LEFT, TOP, RIGHT - LEFT, BOTTOM - TOP);
+       // g2.setColor(new Color(0, 255, 120, 30));
+       // g2.fillRect(LEFT, TOP, RIGHT - LEFT, BOTTOM - TOP);
 
         //Right Ramp
         int[] x = { 1120, 1190, 1220};
         int[] y = { 580, 550, 390};
 
         g2.setColor(Color.ORANGE);
-        g2.setStroke(new BasicStroke(20)); // changes thickness of ramp ( just used for tweaking ramp zones right now) 
+        g2.setStroke(new BasicStroke(20)); // changes thickness of ramp (just used for tweaking ramp zones right now) 
 
-        for (int i = 0; i < x.length - 1; i++) { 
-            g2.drawLine(x[i], y[i], x[i + 1], y[i + 1]); //  uses x array and y array to create a curve
-        }
+      //  for (int i = 0; i < x.length - 1; i++) { 
+     //       g2.drawLine(x[i], y[i], x[i + 1], y[i + 1]); //  uses x array and y array to create a curve
+     //   }
      // Left Ramp
         int[] xLeft = { 180, 110, 80};
         int[] yLeft = { 580, 550, 390};
@@ -277,18 +338,18 @@ public class GamePanel extends JPanel implements KeyListener {
         g2.setColor(Color.BLUE);
         g2.setStroke(new BasicStroke(20)); // ramp thickness
 
-        for (int i = 0; i < xLeft.length - 1; i++) {
-            g2.drawLine(
-                xLeft[i], yLeft[i],
-                xLeft[i + 1], yLeft[i + 1]
-            );
-        }
+       // for (int i = 0; i < xLeft.length - 1; i++) {
+       //     g2.drawLine(xLeft[i], yLeft[i],xLeft[i + 1], yLeft[i + 1]);
+      //  }
         
         // Score Board
         g2.setColor(Color.WHITE);
         g2.setFont(new Font("Arial", Font.BOLD, 30));
-        g2.drawString("BLUE: " + scoreP1, 500, 50);
-        g2.drawString("ORANGE: " + scoreP2, 700, 50);
+        g2.drawString("BLUE: " + scoreP1, 300, 50);
+        g2.drawString("ORANGE: " + scoreP2, 800, 50);
+       if(goalscored) {
+    	   g2.drawString("Timer: " + (int) (4 -(delay/1000)), 600, 50);
+       }
         
         // ball
         int ballSize = 35;
@@ -299,9 +360,9 @@ public class GamePanel extends JPanel implements KeyListener {
         
         // goal zones
         g2.setColor(Color.red);
-        g2.fillRect(120, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
+        g2.fillRect(LEFT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
         g2.setColor(new Color(255, 140, 0, 80));
-        g2.fillRect(1180, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
+        g2.fillRect(RIGHT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
 
         // Draw the players
         p1.draw(g2);
