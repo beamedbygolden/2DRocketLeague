@@ -61,6 +61,7 @@ public class GamePanel extends JPanel implements KeyListener {
     int boost2 = 100;
     
     // time interval of frames 
+    int delaymax = 4000;
     int delay = 4000;
     int Gametimer = 300000;
     int totaltime = 300000;
@@ -136,7 +137,7 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     private void pollControllerInputs() {
-        if (delay >= 4000) {
+        if (delay >= delaymax) {
             // player 1
             if (gamepad1 != null) {
                 gamepad1.poll();
@@ -155,7 +156,11 @@ public class GamePanel extends JPanel implements KeyListener {
                             p1.right = false;
                         }
                     }
-
+                    if (c.getIdentifier() == Component.Identifier.Button._2) {
+                        if (c.getPollData() > 0) {
+                            p1.boost();
+                        }
+                    }
                     // button for jumping
                     if (c.getIdentifier() == Component.Identifier.Button._1) {
                         if (c.getPollData() > 0) {
@@ -200,7 +205,7 @@ public class GamePanel extends JPanel implements KeyListener {
     }
 
     /**
-     * UPDATE GAME LOGIC
+     * update game logic
      */
     public void updateGame() {
         checkGoal();
@@ -286,7 +291,6 @@ public class GamePanel extends JPanel implements KeyListener {
     // ramps 
     class Slope {
         int xStart, yStart, xEnd, yEnd;
-
         public Slope(int xStart, int yStart, int xEnd, int yEnd) {
             this.xStart = xStart;
             this.yStart = yStart;
@@ -335,6 +339,7 @@ public class GamePanel extends JPanel implements KeyListener {
 
             // hit strength
             double impact = Math.abs(c.vx) * 1 + 5;
+            System.out.println("car hit");
 
             ballVX += nx * impact;
             ballVY += ny * impact;
@@ -414,7 +419,7 @@ public class GamePanel extends JPanel implements KeyListener {
         g2.setFont(new Font("Arial", Font.BOLD, 30));
         g2.drawString("BLUE: " + scoreP1, 300, 50);
         g2.drawString("ORANGE: " + scoreP2, 800, 50);
-       if(goalscored) {
+       if(delay < delaymax) {
     	   g2.drawString("Timer: " + (int) (4 -(delay/1000)), 600, 50);
        } else {
     	   int totalSeconds = (int)(Gametimer / 1000);
@@ -442,31 +447,39 @@ public class GamePanel extends JPanel implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
     if (delay >= 4000) {
+    	//player 1 keyinputs
         if (e.getKeyCode() == KeyEvent.VK_A) 
             p1.left = true;
         if (e.getKeyCode() == KeyEvent.VK_D)
             p1.right = true;
+        if (e.getKeyCode() == KeyEvent.VK_W)
+        	p1.jump();
+        if (e.getKeyCode() == KeyEvent.VK_SHIFT)
+        	p1.boost();
+        //player 2 key inputs
         if (e.getKeyCode() == KeyEvent.VK_LEFT) 
             p2.left = true;
         if (e.getKeyCode() == KeyEvent.VK_RIGHT)
             p2.right = true;
-        if (e.getKeyCode() == KeyEvent.VK_W)
-            p1.jump();
         if (e.getKeyCode() == KeyEvent.VK_UP)
             p2.jump();
+        if (e.getKeyCode() == KeyEvent.VK_CONTROL)
+            p2.boost();
     }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-    	if (e.getKeyCode() == KeyEvent.VK_A) 
-            p1.left = false;
-        if (e.getKeyCode() == KeyEvent.VK_D) 
-            p1.right = false;
-        if (e.getKeyCode() == KeyEvent.VK_LEFT) 
-            p2.left = false;
-        if (e.getKeyCode() == KeyEvent.VK_RIGHT) 
-            p2.right = false;
+    	//player 1 key inputs
+    	  if (e.getKeyCode() == KeyEvent.VK_A) 
+              p1.left = false;
+          if (e.getKeyCode() == KeyEvent.VK_D)
+              p1.right = false;
+          //player 2 key inputs
+          if (e.getKeyCode() == KeyEvent.VK_LEFT) 
+              p2.left = false;
+          if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+              p2.right = false;
     }
 
     @Override

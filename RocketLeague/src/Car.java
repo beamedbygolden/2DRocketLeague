@@ -1,4 +1,6 @@
 import java.awt.*;
+import java.time.chrono.MinguoChronology;
+
 import javax.swing.ImageIcon;
 
 public class Car {
@@ -10,6 +12,7 @@ public class Car {
     Color color; // color
     int groundY; // ground (where car stays)
     int boost = 100;
+    int minboost = 0;
     int boostcost = 10;
     double vx = 0;
     double vy = 0;
@@ -76,6 +79,7 @@ public class Car {
         vy = 0;
         onGround = true;
         jumping = false;
+        boost = 100;
     }
 
     /**
@@ -97,5 +101,11 @@ public class Car {
             onGround = false;
             jumping = true;
         }
+    }
+    public void boost() {
+    	if(boost > minboost) {
+    		vx *= 1.25;
+    		boost -= boostcost;
+    	}
     }
 }
