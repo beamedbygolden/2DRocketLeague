@@ -3,8 +3,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.QuadCurve2D;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.concurrent.Delayed;
-
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Component;
@@ -12,12 +12,19 @@ import net.java.games.input.Component;
 public class GamePanel extends JPanel implements KeyListener {
     Car p1; // player 1 car 
     Car p2; // player 2 car
+    //ai car
+    CarAI aiController = new CarAI();
+    public static boolean AI_MODE = false;
+    public static String AI_DIFFICULTY = "EASY";
     
     //goal scored boolean
     private boolean goalscored = false;
     
     //image for background of game might add more later 
     Image arenaBG;
+    
+    // image for ball
+    Image ballImg;
     
     // Controller inputs
     private Controller gamepad1 = null;
@@ -28,28 +35,26 @@ public class GamePanel extends JPanel implements KeyListener {
     int scoreP2 = 0;
     
     // Field parameters
-    final int LEFT = 100; 
-    final int RIGHT = 1230; 
-    final int TOP = 0; 
-    final int BOTTOM = 450;
+    final int LEFT = 50; 
+    final int RIGHT = 1260; 
+    final int TOP = 100; 
+    final int BOTTOM = 620;
     
     // Goal parameters ( for map I want to use)
-    //final int GOAL_TOP = 170; 
-    //final int GOAL_BOTTOM = 380;
-    //final int LEFT_GOAL_X = 0;
-    //final int RIGHT_GOAL_X = 1280;
-    
-    //Goal parameters for tester map
-    final int GOAL_TOP = 350; 
-    final int GOAL_BOTTOM = 450;
-    final int LEFT_GOAL_X = 250;
-    final int RIGHT_GOAL_X = 1000;
+    final int GOAL_TOP = 170; 
+    final int GOAL_BOTTOM = 380;
+    final int LEFT_GOAL_X = 100;
+    final int RIGHT_GOAL_X = 1200;
     
     // Ball parameters
     double ballX = 650;
-    double ballY = 450;
+    double ballY = 620;
     double ballVX = 0;
     double ballVY = 0;
+    
+    // ball start position
+    final int BALL_SPAWN_X = 650;
+    final int BALL_SPAWN_Y = 620;
     
     // boost 
     int boost1 = 100;
@@ -57,30 +62,47 @@ public class GamePanel extends JPanel implements KeyListener {
     
     // time interval of frames 
     int delay = 4000;
+    int Gametimer = 300000;
+    int totaltime = 300000;
+    
+    // ramp arraylist for coordinates
+    ArrayList<Slope> slopes = new ArrayList<>();
+    
 
     /**
      * Constructor
      */
     public GamePanel() {
     	//background image
-    	//arenaBG = new ImageIcon("Arena1.png").getImage(); 
-    	arenaBG = new ImageIcon("testarena.png").getImage(); 
-        //int ground = 550; // ground level for cars
-    	int ground = 400;
+    	arenaBG = new ImageIcon("Arena1.png").getImage(); 
+    	ballImg = new ImageIcon("ballimg.png").getImage();
+    	int p1Ground = (int) getFloorHeight(300);
+    	int p2Ground = (int) getFloorHeight(900); // ground level for cars
 
-        p1 = new Car(300, ground, ground, Color.BLUE); // creates player 1 car
-        p2 = new Car(900, ground, ground, Color.ORANGE); // creates player 2 car
-
+        p1 = new Car(300,p1Ground, p1Ground, Color.BLUE, "bluecar.png", this); //player 1 car
+        p2 = new Car(900, p2Ground, p2Ground, Color.ORANGE, "orangecar.png", this); //player 2 car
+        p1.facingRight = true;
+        p2.facingRight = false;
+        
+        // ramp coordinates
+        //right ramp
+        slopes.add(new Slope(1120, 580, 1190, 550));
+        slopes.add(new Slope(1190, 550, 1220, 390));
+        //left ramp
+        slopes.add(new Slope(180, 580, 110, 550));
+        slopes.add(new Slope(110, 550, 80, 390));
+        
         setFocusable(true); // sets frame on game 
         addKeyListener(this); // checks for key inputs
 
         // Initialize Controller
         initController();
 
-        Timer timer = new Timer(16, e -> { // game loop
+        Timer timer = new Timer(16, totaltime -> { // game loop
             updateGame();
             repaint();
             delay+=16;
+            Gametimer-= 16;
         });
 
         timer.start();
@@ -113,50 +135,68 @@ public class GamePanel extends JPanel implements KeyListener {
     	  System.out.println("P2 = " + gamepad2);
     }
     
-    /**
-     * Reads analog stick status from the gamepad and updates player controls
-     */
     private void pollControllerInputs() {
         if (delay >= 4000) {
-    	if (gamepad1 != null) {
-            gamepad1.poll();
-            for (Component c : gamepad1.getComponents()) {
-            	 if (c.getIdentifier() == Component.Identifier.Axis.X) {
-             	    double x = c.getPollData();
-                    if (x < -0.2) {
-                        p1.left = true;
-                    } else {
-                        p1.left = false;
+            // player 1
+            if (gamepad1 != null) {
+                gamepad1.poll();
+                for (Component c : gamepad1.getComponents()) {
+                    // stick movement (left +right)
+                    if (c.getIdentifier() == Component.Identifier.Axis.X) {
+                        double x = c.getPollData();
+                        if (x < -0.2) {
+                            p1.left = true;
+                        } else {
+                            p1.left = false;
+                        }
+                        if (x > 0.2) {
+                            p1.right = true;
+                        } else {
+                            p1.right = false;
+                        }
                     }
-                    if (x > 0.2) {
-                        p1.right = true;
-                    } else {
-                        p1.right = false;
-                    }	
+
+                    // button for jumping
+                    if (c.getIdentifier() == Component.Identifier.Button._1) {
+                        if (c.getPollData() > 0) {
+                            p1.jump();
+                        }
+                    }
                 }
             }
-            	
-        }
-        if (gamepad2 != null) {
-            gamepad2.poll();
-            for (Component c : gamepad2.getComponents()) {
-            	 if (c.getIdentifier() == Component.Identifier.Axis.X) {
-            	    double x = c.getPollData();
-                    if (x < -0.2) {
-                        p2.left = true;
-                    } else {
-                        p2.left = false;
+
+            // player 2
+            if (gamepad2 != null) {
+                gamepad2.poll();
+                for (Component c : gamepad2.getComponents()) {
+
+                    // stick movement (left +right)
+                    if (c.getIdentifier() == Component.Identifier.Axis.X) {
+
+                        double x = c.getPollData();
+
+                        if (x < -0.2) {
+                            p2.left = true;
+                        } else {
+                            p2.left = false;
+                        }
+
+                        if (x > 0.2) {
+                            p2.right = true;
+                        } else {
+                            p2.right = false;
+                        }
                     }
-                    if (x > 0.2) {
-                        p2.right = true;
-                    } else {
-                        p2.right = false;
-                    }	
+                    // jump button
+                    if (c.getIdentifier() == Component.Identifier.Button._1) {
+
+                        if (c.getPollData() > 0) {
+                            p2.jump();
+                        }
+                    }
                 }
             }
-            	
         }
-       }
     }
 
     /**
@@ -164,7 +204,18 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     public void updateGame() {
         checkGoal();
-        
+        if (AI_MODE) {
+
+            if (delay >= 4000) {
+                aiController.update(p2, ballX, ballY, delay);
+            } else {
+                p2.left = false;
+                p2.right = false;
+            }
+
+        }// else {
+         //   p2.update();
+        //}
         // Read gamepad movements before car updates positions
         pollControllerInputs();
         
@@ -199,8 +250,9 @@ public class GamePanel extends JPanel implements KeyListener {
         ballVY *= 0.98;
 
         // ground bounce
-        if (ballY > BOTTOM - 20) {
-            ballY = BOTTOM - 20;
+        double ground = getFloorHeight(ballX);
+        if (ballY > ground - 20) {
+            ballY = ground - 20;
             ballVY *= -0.6;
         }
 
@@ -226,10 +278,32 @@ public class GamePanel extends JPanel implements KeyListener {
     * Resets ball after goals
     */
     public void resetBall() {
-    	   ballX = 650;
-    	   ballY = 450;
-    	   ballVX = 0;
-    	   ballVY = 0;
+        ballX = BALL_SPAWN_X;
+        ballY = BALL_SPAWN_Y;
+        ballVX = 0;
+        ballVY = 0;
+    }
+    // ramps 
+    class Slope {
+        int xStart, yStart, xEnd, yEnd;
+
+        public Slope(int xStart, int yStart, int xEnd, int yEnd) {
+            this.xStart = xStart;
+            this.yStart = yStart;
+            this.xEnd = xEnd;
+            this.yEnd = yEnd;
+        }
+    }
+    
+    public double getFloorHeight(double x) {
+        for (Slope s : slopes) {
+            if (x >= Math.min(s.xStart, s.xEnd) && x <= Math.max(s.xStart, s.xEnd)) {
+                double progress = (x - s.xStart) / (double)(s.xEnd - s.xStart);
+                return s.yStart + progress * (s.yEnd - s.yStart);
+            }
+        }
+
+        return 550; // flat ground
     }
 
     /**
@@ -238,9 +312,6 @@ public class GamePanel extends JPanel implements KeyListener {
     public void clamp(Car c) {
         if (c.x < LEFT) c.x = LEFT;
         if (c.x > RIGHT - 120) c.x = RIGHT - 120;
-
-        // lock car to ground system
-        if (c.y > c.groundY) c.y = c.groundY;
     }
     
     public void handleCollision(Car c) {
@@ -269,8 +340,8 @@ public class GamePanel extends JPanel implements KeyListener {
             ballVY += ny * impact;
 
             // prevent sticking
-            //ballX += nx * 5;
-            //ballY += ny * 5;
+            ballX += nx * 5;
+            ballY += ny * 5;
         }
     }
     public void resetplayers() {
@@ -313,13 +384,9 @@ public class GamePanel extends JPanel implements KeyListener {
         // smooth graphics
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Background 
-       // g2.setColor(new Color(30, 30, 40));
-       // g2.fillRect(0, 0, getWidth(), getHeight()); 
-        
         // Field 
-       // g2.setColor(new Color(0, 255, 120, 30));
-       // g2.fillRect(LEFT, TOP, RIGHT - LEFT, BOTTOM - TOP);
+      // g2.setColor(new Color(0, 255, 120, 30));
+      // g2.fillRect(LEFT, TOP, RIGHT - LEFT, BOTTOM - TOP);
 
         //Right Ramp
         int[] x = { 1120, 1190, 1220};
@@ -328,19 +395,19 @@ public class GamePanel extends JPanel implements KeyListener {
         g2.setColor(Color.ORANGE);
         g2.setStroke(new BasicStroke(20)); // changes thickness of ramp (just used for tweaking ramp zones right now) 
 
-      //  for (int i = 0; i < x.length - 1; i++) { 
-     //       g2.drawLine(x[i], y[i], x[i + 1], y[i + 1]); //  uses x array and y array to create a curve
-     //   }
-     // Left Ramp
+     // for (int i = 0; i < x.length - 1; i++) { 
+         // g2.drawLine(x[i], y[i], x[i + 1], y[i + 1]); //  uses x array and y array to create a curve
+     // }
+     //Left Ramp
         int[] xLeft = { 180, 110, 80};
         int[] yLeft = { 580, 550, 390};
 
         g2.setColor(Color.BLUE);
         g2.setStroke(new BasicStroke(20)); // ramp thickness
 
-       // for (int i = 0; i < xLeft.length - 1; i++) {
-       //     g2.drawLine(xLeft[i], yLeft[i],xLeft[i + 1], yLeft[i + 1]);
-      //  }
+        //for (int i = 0; i < xLeft.length - 1; i++) {
+           // g2.drawLine(xLeft[i], yLeft[i],xLeft[i + 1], yLeft[i + 1]);
+        //}
         
         // Score Board
         g2.setColor(Color.WHITE);
@@ -349,20 +416,22 @@ public class GamePanel extends JPanel implements KeyListener {
         g2.drawString("ORANGE: " + scoreP2, 800, 50);
        if(goalscored) {
     	   g2.drawString("Timer: " + (int) (4 -(delay/1000)), 600, 50);
+       } else {
+    	   int totalSeconds = (int)(Gametimer / 1000);
+    	   int minutes = totalSeconds / 60;
+    	   int seconds = totalSeconds % 60;
+    	   g2.drawString("Timer: " + minutes + ":" + String.format("%02d", seconds), 600, 50);
        }
         
         // ball
-        int ballSize = 35;
-        g2.setColor(Color.WHITE);
-        g2.fillOval((int) ballX - ballSize / 2, (int) ballY - ballSize / 2, ballSize, ballSize);
-        g2.setColor(Color.BLACK);
-        g2.drawOval((int) ballX - ballSize / 2, (int) ballY - ballSize / 2, ballSize, ballSize);
+       int size = 60;
+       g2.drawImage(ballImg, (int) ballX - size / 2, (int) ballY - size / 2, size, size, null);
         
-        // goal zones
-        g2.setColor(Color.red);
-        g2.fillRect(LEFT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
-        g2.setColor(new Color(255, 140, 0, 80));
-        g2.fillRect(RIGHT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
+       // goal zones
+       // g2.setColor(Color.red);
+       // g2.fillRect(LEFT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
+       //g2.setColor(new Color(255, 140, 0, 80));
+       // g2.fillRect(RIGHT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
 
         // Draw the players
         p1.draw(g2);
@@ -372,7 +441,7 @@ public class GamePanel extends JPanel implements KeyListener {
     // Key inputs (Hybrid control option remains active!)
     @Override
     public void keyPressed(KeyEvent e) {
-
+    if (delay >= 4000) {
         if (e.getKeyCode() == KeyEvent.VK_A) 
             p1.left = true;
         if (e.getKeyCode() == KeyEvent.VK_D)
@@ -381,6 +450,11 @@ public class GamePanel extends JPanel implements KeyListener {
             p2.left = true;
         if (e.getKeyCode() == KeyEvent.VK_RIGHT)
             p2.right = true;
+        if (e.getKeyCode() == KeyEvent.VK_W)
+            p1.jump();
+        if (e.getKeyCode() == KeyEvent.VK_UP)
+            p2.jump();
+    }
     }
 
     @Override

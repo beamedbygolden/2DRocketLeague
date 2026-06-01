@@ -9,6 +9,7 @@ public class MenuPanel extends JPanel implements MouseListener {
     // invisible button hitboxes
     Rectangle playButton = new Rectangle(845, 580, 300, 160); 
     Rectangle infoButton = new Rectangle(100, 580, 350, 160);
+    Rectangle AI_Button = new Rectangle(460, 540, 350, 160);
 
     public MenuPanel() {
         bg = new ImageIcon("RLStartingScreen.png").getImage(); // starting screen photo
@@ -26,8 +27,9 @@ public class MenuPanel extends JPanel implements MouseListener {
         g2.drawImage(bg, 0, 0, getWidth(), getHeight(), this);
         
         //dummy testers
-        g2.fillRect(playButton.x, playButton.y, playButton.width, playButton.height);
-        g2.fillRect(infoButton.x, infoButton.y, infoButton.width, infoButton.height);
+        //g2.fillRect(playButton.x, playButton.y, playButton.width, playButton.height);
+        //g2.fillRect(infoButton.x, infoButton.y, infoButton.width, infoButton.height);
+        //g2.fillRect(AI_Button.x, infoButton.y, infoButton.width, infoButton.height);
     }
 
     @Override
@@ -64,7 +66,37 @@ public class MenuPanel extends JPanel implements MouseListener {
                 JOptionPane.INFORMATION_MESSAGE
             );
         }
+        if (AI_Button.contains(p)) {
+
+            String[] options = {"Easy", "Medium", "Hard"};
+
+            int choice = JOptionPane.showOptionDialog(
+                this,
+                "Choose AI Difficulty",
+                "AI Mode",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+            );
+
+            if (choice == 0) GamePanel.AI_DIFFICULTY = "EASY";
+            if (choice == 1) GamePanel.AI_DIFFICULTY = "MEDIUM";
+            if (choice == 2) GamePanel.AI_DIFFICULTY = "HARD";
+
+            GamePanel.AI_MODE = true;
+
+            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            GamePanel game = new GamePanel();
+
+            frame.setContentPane(game);
+            frame.revalidate();
+            frame.repaint();
+            game.requestFocusInWindow();
+        }
     }
+    
 
     // unused mouse methods
     public void mouseReleased(MouseEvent e) {}

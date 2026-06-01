@@ -1,6 +1,8 @@
 import java.awt.*;
+import javax.swing.ImageIcon;
 
 public class Car {
+	Image carImage; // car photo
     int x, y; // position
     int speed = 6; // Movement speed
     int startx, starty;
@@ -10,17 +12,25 @@ public class Car {
     int boost = 100;
     int boostcost = 10;
     double vx = 0;
+    double vy = 0;
+    boolean onGround = true;
+    boolean jumping = false;
+    GamePanel panel;
+    boolean facingRight = true;
 
     /**
      * Constructor
      */
-    public Car(int x, int y, int groundY, Color color) {
+    public Car(int x, int y, int groundY, Color color, String imagePath, GamePanel panel) {
         this.x = x;
         this.y = y;
         this.groundY = groundY;
         this.color = color;
+        this.panel = panel;
         this.startx = x;
         this.starty = y;
+
+        carImage = new ImageIcon(imagePath).getImage();
     }
 
     /**
@@ -28,18 +38,29 @@ public class Car {
      */
     public void update() {
 
-        // acceleration
         if (left)  vx -= 0.5;
         if (right) vx += 0.5;
 
-        // friction
         vx *= 0.92;
-
-        // apply velocity
         x += vx;
 
-        // keep on ground
-        y = groundY;
+        double ground = panel.getFloorHeight(x);
+
+        vy += 0.6;
+        y += vy;
+
+        if (y >= ground) {
+            y = (int) ground;
+            vy = 0;
+            onGround = true;
+        } else {
+            onGround = false;
+        }
+        if (vx > 0.1) {
+            facingRight = true;
+        } else if (vx < -0.1) {
+            facingRight = false;
+        }
     }
     /**
      * resets car value 
@@ -52,56 +73,29 @@ public class Car {
         right = false;
         up = false;
         down = false;
+        vy = 0;
+        onGround = true;
+        jumping = false;
     }
 
     /**
      * Draw car
      */
     public void draw(Graphics2D g2) {
-        // Body
-        g2.setColor(color);
-        g2.fillRoundRect(x, y, 120, 35, 15, 15);
-
-        // Roof
-        g2.setColor(color.darker());
-        g2.fillRoundRect(x + 25, y - 20, 60, 25, 10, 10);
-
-        // Windows
-        g2.setColor(new Color(200, 240, 255));
-        g2.fillRoundRect(x + 30, y - 18, 20, 15, 5, 5);
-        g2.fillRoundRect(x + 55, y - 18, 20, 15, 5, 5);
-
-        // Wheels
-        g2.setColor(Color.DARK_GRAY);
-        g2.fillOval(x + 10, y + 25, 25, 25);
-        g2.fillOval(x + 85, y + 25, 25, 25);
-
-        // wheel centers
-        g2.setColor(Color.LIGHT_GRAY);
-        g2.fillOval(x + 17, y + 32, 12, 12);
-        g2.fillOval(x + 92, y + 32, 12, 12);
-
-        
-        //boost flame
-        g2.setColor(Color.ORANGE);
-        // moving right
-        if (vx > 1) {
-
-            g2.fillPolygon(
-                new int[]{x, x - 30, x},
-                new int[]{y + 10, y + 17, y + 25},
-                3
-            );
+        int width = 120;
+        int height = 70;
+        if (facingRight) {
+            g2.drawImage(carImage, x, y - 20, width, height, null);
+        } else {
+            g2.drawImage(carImage, x + width, y - 20, -width, height, null);
         }
+    }
 
-        // moving left
-        if (vx < -1) {
-
-            g2.fillPolygon(
-                new int[]{x + 120, x + 150, x + 120},
-                new int[]{y + 10, y + 17, y + 25},
-                3
-            );
+    public void jump() {
+        if (onGround) {
+            vy = -12;   // jump strength
+            onGround = false;
+            jumping = true;
         }
     }
 }
