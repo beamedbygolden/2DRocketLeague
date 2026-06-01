@@ -339,7 +339,6 @@ public class GamePanel extends JPanel implements KeyListener {
 
             // hit strength
             double impact = Math.abs(c.vx) * 1 + 5;
-            System.out.println("car hit");
 
             ballVX += nx * impact;
             ballVY += ny * impact;
