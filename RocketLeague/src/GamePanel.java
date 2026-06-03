@@ -12,6 +12,7 @@ import net.java.games.input.Component;
 public class GamePanel extends JPanel implements KeyListener {
     Car p1; // player 1 car 
     Car p2; // player 2 car
+    
     //ai car
     CarAI aiController = new CarAI();
     public static boolean AI_MODE = false;
@@ -63,8 +64,11 @@ public class GamePanel extends JPanel implements KeyListener {
     // time interval of frames 
     int delaymax = 4000;
     int delay = 4000;
-    int Gametimer = 300000;
-    int totaltime = 300000;
+    int Gametimer = 100000;
+    int totaltime = 100000;
+    
+    //max ball speed (for ramps)
+    int maxballv = 1;
     
     // ramp arraylist for coordinates
     ArrayList<Slope> slopes = new ArrayList<>();
@@ -80,8 +84,8 @@ public class GamePanel extends JPanel implements KeyListener {
     	int p1Ground = (int) getFloorHeight(300);
     	int p2Ground = (int) getFloorHeight(900); // ground level for cars
 
-        p1 = new Car(300,p1Ground, p1Ground, Color.BLUE, "bluecar.png", this); //player 1 car
-        p2 = new Car(900, p2Ground, p2Ground, Color.ORANGE, "orangecar.png", this); //player 2 car
+        p1 = new Car(300,p1Ground, p1Ground, Color.BLUE,"boost.png", "bluecar.png", this); //player 1 car
+        p2 = new Car(900, p2Ground, p2Ground, Color.ORANGE,"boost.png", "orangecar.png", this); //player 2 car
         p1.facingRight = true;
         p2.facingRight = false;
         
@@ -158,6 +162,7 @@ public class GamePanel extends JPanel implements KeyListener {
                     }
                     if (c.getIdentifier() == Component.Identifier.Button._2) {
                         if (c.getPollData() > 0) {
+                            p1.boosting = true;
                             p1.boost();
                         }
                     }
@@ -192,6 +197,12 @@ public class GamePanel extends JPanel implements KeyListener {
                             p2.right = false;
                         }
                     }
+                    if (c.getIdentifier() == Component.Identifier.Button._2) {
+                        if (c.getPollData() > 0) {
+                            p2.boosting = true;
+                            p2.boost();
+                        }
+                    }
                     // jump button
                     if (c.getIdentifier() == Component.Identifier.Button._1) {
 
@@ -199,6 +210,7 @@ public class GamePanel extends JPanel implements KeyListener {
                             p2.jump();
                         }
                     }
+                    
                 }
             }
         }
@@ -258,7 +270,8 @@ public class GamePanel extends JPanel implements KeyListener {
         double ground = getFloorHeight(ballX);
         if (ballY > ground - 20) {
             ballY = ground - 20;
-            ballVY *= -0.6;
+            ballVY *= -0.8;
+            ballVX *= .6;
         }
 
         // ceiling
@@ -301,9 +314,9 @@ public class GamePanel extends JPanel implements KeyListener {
     
     public double getFloorHeight(double x) {
         for (Slope s : slopes) {
-            if (x >= Math.min(s.xStart, s.xEnd) && x <= Math.max(s.xStart, s.xEnd)) {
-                double progress = (x - s.xStart) / (double)(s.xEnd - s.xStart);
-                return s.yStart + progress * (s.yEnd - s.yStart);
+            if (x >= Math.min(s.xStart, s.xEnd) && x <= Math.max(s.xStart, s.xEnd)) { // if the ball is on the ramp
+                double progress = (x - s.xStart) / (double)(s.xEnd - s.xStart); // how far the ball actually is on the ramp
+                return s.yStart + progress * (s.yEnd - s.yStart);  // gets floor height at given point 
             }
         }
 
@@ -393,8 +406,8 @@ public class GamePanel extends JPanel implements KeyListener {
       // g2.fillRect(LEFT, TOP, RIGHT - LEFT, BOTTOM - TOP);
 
         //Right Ramp
-        int[] x = { 1120, 1190, 1220};
-        int[] y = { 580, 550, 390};
+        //int[] x = { 1120, 1190, 1220};
+        //int[] y = { 580, 550, 390};
 
         g2.setColor(Color.ORANGE);
         g2.setStroke(new BasicStroke(20)); // changes thickness of ramp (just used for tweaking ramp zones right now) 
@@ -403,8 +416,8 @@ public class GamePanel extends JPanel implements KeyListener {
          // g2.drawLine(x[i], y[i], x[i + 1], y[i + 1]); //  uses x array and y array to create a curve
      // }
      //Left Ramp
-        int[] xLeft = { 180, 110, 80};
-        int[] yLeft = { 580, 550, 390};
+        //int[] xLeft = { 180, 110, 80};
+        //int[] yLeft = { 580, 550, 390};
 
         g2.setColor(Color.BLUE);
         g2.setStroke(new BasicStroke(20)); // ramp thickness
@@ -436,6 +449,13 @@ public class GamePanel extends JPanel implements KeyListener {
        // g2.fillRect(LEFT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
        //g2.setColor(new Color(255, 140, 0, 80));
        // g2.fillRect(RIGHT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
+       
+     //right ramp
+       g2.drawLine(1120, 560, 1190, 550);// bottom line
+       g2.drawLine(1190, 550, 1220, 390); // top line
+       //left ramp
+       g2.drawLine(180, 560, 110, 550); //bottom line
+       g2.drawLine(130, 560, 80, 420); // top line
 
         // Draw the players
         p1.draw(g2);
@@ -453,8 +473,10 @@ public class GamePanel extends JPanel implements KeyListener {
             p1.right = true;
         if (e.getKeyCode() == KeyEvent.VK_W)
         	p1.jump();
-        if (e.getKeyCode() == KeyEvent.VK_SHIFT)
+        if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+        	p1.boosting = true;
         	p1.boost();
+        }
         //player 2 key inputs
         if (e.getKeyCode() == KeyEvent.VK_LEFT) 
             p2.left = true;
@@ -462,8 +484,10 @@ public class GamePanel extends JPanel implements KeyListener {
             p2.right = true;
         if (e.getKeyCode() == KeyEvent.VK_UP)
             p2.jump();
-        if (e.getKeyCode() == KeyEvent.VK_CONTROL)
+        if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+            p2.boosting = true;
             p2.boost();
+        }
     }
     }
 

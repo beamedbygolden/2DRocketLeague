@@ -5,6 +5,7 @@ import javax.swing.ImageIcon;
 
 public class Car {
 	Image carImage; // car photo
+	Image boostImage; // boost image
     int x, y; // position
     int speed = 6; // Movement speed
     int startx, starty;
@@ -20,11 +21,12 @@ public class Car {
     boolean jumping = false;
     GamePanel panel;
     boolean facingRight = true;
+    boolean boosting = false;
 
     /**
      * Constructor
      */
-    public Car(int x, int y, int groundY, Color color, String imagePath, GamePanel panel) {
+    public Car(int x, int y, int groundY, Color color,String boostimg, String imagePath, GamePanel panel) {
         this.x = x;
         this.y = y;
         this.groundY = groundY;
@@ -32,7 +34,8 @@ public class Car {
         this.panel = panel;
         this.startx = x;
         this.starty = y;
-
+        
+        boostImage = new ImageIcon(boostimg).getImage();
         carImage = new ImageIcon(imagePath).getImage();
     }
 
@@ -90,8 +93,14 @@ public class Car {
         int height = 70;
         if (facingRight) {
             g2.drawImage(carImage, x, y - 20, width, height, null);
+            if(isBoosting()) {
+            	g2.drawImage(boostImage, height, height, height, height, height, height, width, height, panel);
+            }
         } else {
             g2.drawImage(carImage, x + width, y - 20, -width, height, null);
+              if(isBoosting()) {
+            	 g2.drawImage(boostImage, x + width, y - 20, -width, height, null);
+            }
         }
     }
 
@@ -102,10 +111,20 @@ public class Car {
             jumping = true;
         }
     }
+    // tells state of boosting
+    public boolean isBoosting() {
+        return boosting;
+    }
+    
+    // actually does the boosting
     public void boost() {
-    	if(boost > minboost) {
-    		vx *= 1.25;
-    		boost -= boostcost;
-    	}
+        if (boost > minboost) {
+            if (facingRight) {
+                vx += 5;
+            } else {
+                vx -= 5;
+            }
+            boost -= boostcost;
+        }
     }
 }
