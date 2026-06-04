@@ -4,14 +4,14 @@ public class CarAI {
 
 	    if (delay < 4000) return;
 
-	    double speed = 0.2;
+	    double speed = 0.3;
 
 	    if (GamePanel.AI_DIFFICULTY.equals("MEDIUM")) {
-	        speed = 0.5;
+	        speed = 0.8;
 	    }
 
 	    if (GamePanel.AI_DIFFICULTY.equals("HARD")) {
-	        speed = .8;
+	        speed = 1.2;
 	    }
 
 	    if (ballX < ai.x - 30) {

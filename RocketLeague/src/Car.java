@@ -14,7 +14,7 @@ public class Car {
     int groundY; // ground (where car stays)
     int boost = 100;
     int minboost = 0;
-    int boostcost = 10;
+    int boostcost = 1;
     double vx = 0;
     double vy = 0;
     boolean onGround = true;
@@ -22,7 +22,7 @@ public class Car {
     GamePanel panel;
     boolean facingRight = true;
     boolean boosting = false;
-
+    double angle = 0;
     /**
      * Constructor
      */
@@ -38,17 +38,27 @@ public class Car {
         boostImage = new ImageIcon(boostimg).getImage();
         carImage = new ImageIcon(imagePath).getImage();
     }
+    
+    public void tilt(double stickX1) {
+        if (!onGround) {
+            // free rotation in the air like rocket league
+            angle += stickX1 * 3.0;  
+            angle = Math.max(-90, Math.min(90, angle));
+        } else {
+            // on ground just tilt slightly, snap back to flat
+            angle += stickX1 * 1.5;
+            angle *= 0.85; // spring back toward 0
+            angle = Math.max(-30, Math.min(30, angle));
+        }
+    }
 
-    /**
-     * Update movement + ground physics
-     */
     public void update() {
-
-        if (left)  vx -= 0.5;
-        if (right) vx += 0.5;
+        // keyboard/stick horizontal movement
+        if (left)  vx -= 0.8;
+        if (right) vx += 0.8;
 
         vx *= 0.92;
-        x += vx;
+        x += (int) vx;
 
         double ground = panel.getFloorHeight(x);
 
@@ -59,15 +69,18 @@ public class Car {
             y = (int) ground;
             vy = 0;
             onGround = true;
+            angle *= 0.7;
         } else {
             onGround = false;
         }
-        if (vx > 0.1) {
-            facingRight = true;
-        } else if (vx < -0.1) {
-            facingRight = false;
+
+        // recharge boost
+        if (!boosting && boost < 100) {
+            boost += 10;
         }
+        boosting = false;
     }
+
     /**
      * resets car value 
      */
@@ -91,17 +104,47 @@ public class Car {
     public void draw(Graphics2D g2) {
         int width = 120;
         int height = 70;
+
+        var saved = g2.getTransform();
+
+        // pivot rotation around the center of the car
+        double pivotX = x + width / 2.0;
+        double pivotY = y;
+        g2.rotate(Math.toRadians(angle), pivotX, pivotY);
+
         if (facingRight) {
             g2.drawImage(carImage, x, y - 20, width, height, null);
-            if(isBoosting()) {
-            	g2.drawImage(boostImage, height, height, height, height, height, height, width, height, panel);
+            if (isBoosting()) {
+                g2.drawImage(boostImage, x - 40, y - 10, 50, 40, null);
             }
         } else {
             g2.drawImage(carImage, x + width, y - 20, -width, height, null);
-              if(isBoosting()) {
-            	 g2.drawImage(boostImage, x + width, y - 20, -width, height, null);
+            if (isBoosting()) {
+                g2.drawImage(boostImage, x + width, y - 10, 50, 40, null);
             }
         }
+
+        g2.setTransform(saved); // restore so nothing else rotates
+    }
+
+    public void driveForward(double intensity) {
+        double rad = Math.toRadians(angle);
+        double thrust = intensity * 0.4;
+        if (facingRight) {
+            vx += Math.cos(rad) * thrust;
+        } else {
+            vx -= Math.cos(rad) * thrust;
+        }
+        vy += Math.sin(rad) * thrust;
+    }
+
+    public void brake(double intensity) {
+        vx *= (1.0 + intensity * 0.1); // intensity is negative, so this slows vx
+        if (onGround) vy = 0;
+    }
+
+    public void setAngle(double d) {
+        this.angle = Math.max(-90, Math.min(90, d)); // clamp so you can't flip upside down
     }
 
     public void jump() {
@@ -111,6 +154,7 @@ public class Car {
             jumping = true;
         }
     }
+    
     // tells state of boosting
     public boolean isBoosting() {
         return boosting;
@@ -119,12 +163,25 @@ public class Car {
     // actually does the boosting
     public void boost() {
         if (boost > minboost) {
+            double rad = Math.toRadians(angle);
             if (facingRight) {
-                vx += 5;
+                vx += Math.cos(rad) * 1.5; // reduced from 4
             } else {
-                vx -= 5;
+                vx -= Math.cos(rad) * 1.5;
             }
+            vy += Math.sin(rad) * 1.2;
+            vy -= 0.5; // reduced from 1.5
             boost -= boostcost;
         }
     }
-}
+
+    // faster turning with L1/R1
+    public void turnLeft() {
+        angle -= 6; // increase this number for even faster turning
+        angle = Math.max(-90, Math.min(90, angle));
+    }
+
+    public void turnRight() {
+        angle += 6;
+        angle = Math.max(-90, Math.min(90, angle));
+    }}

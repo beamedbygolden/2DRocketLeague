@@ -70,6 +70,11 @@ public class GamePanel extends JPanel implements KeyListener {
     //max ball speed (for ramps)
     int maxballv = 1;
     
+    // keyboard state tracking ( for some reason keyboard didnt work while controller worked)
+    private boolean kb_p1_left, kb_p1_right;
+    private boolean kb_p2_left, kb_p2_right;
+
+    
     // ramp arraylist for coordinates
     ArrayList<Slope> slopes = new ArrayList<>();
     
@@ -118,101 +123,143 @@ public class GamePanel extends JPanel implements KeyListener {
      * used jinput plugin library (very complex but used ai to understand library plugin and used jinput guide for methods)
      */
     private void initController() {
-        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers(); // gets controllers for game ( used jinput guide for this)
+        System.setProperty("net.java.games.input.librarypath", System.getProperty("user.dir"));
+        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+        System.out.println("Total controllers found: " + controllers.length);
+
         int found = 0;
         for (Controller c : controllers) {
-            if (c.getType() == Controller.Type.GAMEPAD ||  c.getType() == Controller.Type.STICK) {
-            	  if (found == 0) {
-                      gamepad1 = c;
-                      System.out.println("Player 1 Controller: " + c.getName());
-                      found++;
-                  }
-                  else if (found == 1) {
-                      gamepad2 = c;
-                      System.out.println("Player 2 Controller: " + c.getName());
-                      break;
-                  }
+            System.out.println("  -> " + c.getName() + " | type: " + c.getType());
+            if (c.getType() == Controller.Type.GAMEPAD || c.getType() == Controller.Type.STICK) {
+                if (found == 0) {
+                    gamepad1 = c;
+                    System.out.println("Player 1 Controller: " + c.getName());
+                    found++;
+                } else if (found == 1) {
+                    gamepad2 = c;
+                    System.out.println("Player 2 Controller: " + c.getName());
+                    break;
+                }
             }
-      	 
         }
 
         System.out.println("P1 = " + gamepad1);
-    	  System.out.println("P2 = " + gamepad2);
+        System.out.println("P2 = " + gamepad2);
     }
     
     private void pollControllerInputs() {
-        if (delay >= delaymax) {
-            // player 1
-            if (gamepad1 != null) {
-                gamepad1.poll();
-                for (Component c : gamepad1.getComponents()) {
-                    // stick movement (left +right)
-                    if (c.getIdentifier() == Component.Identifier.Axis.X) {
-                        double x = c.getPollData();
-                        if (x < -0.2) {
-                            p1.left = true;
-                        } else {
-                            p1.left = false;
-                        }
-                        if (x > 0.2) {
-                            p1.right = true;
-                        } else {
-                            p1.right = false;
-                        }
-                    }
-                    if (c.getIdentifier() == Component.Identifier.Button._2) {
-                        if (c.getPollData() > 0) {
-                            p1.boosting = true;
-                            p1.boost();
-                        }
-                    }
-                    // button for jumping
-                    if (c.getIdentifier() == Component.Identifier.Button._1) {
-                        if (c.getPollData() > 0) {
-                            p1.jump();
-                        }
+        if (delay < delaymax) return;
+
+        p1.boosting = false;
+        p2.boosting = false;
+
+        if (gamepad1 != null) {
+            gamepad1.poll();
+            double stickX1 = 0;
+            for (Component c : gamepad1.getComponents()) {
+                if (c.getIdentifier() == Component.Identifier.Axis.X) {
+                    stickX1 = c.getPollData();
+                    if (stickX1 < -0.2) {
+                        p1.facingRight = false;
+                        p1.left = true;
+                        p1.right = false;
+                    } else if (stickX1 > 0.2) {
+                        p1.facingRight = true;
+                        p1.right = true;
+                        p1.left = false;
+                    } else {
+                        p1.left = false;
+                        p1.right = false;
                     }
                 }
-            }
-
-            // player 2
-            if (gamepad2 != null) {
-                gamepad2.poll();
-                for (Component c : gamepad2.getComponents()) {
-
-                    // stick movement (left +right)
-                    if (c.getIdentifier() == Component.Identifier.Axis.X) {
-
-                        double x = c.getPollData();
-
-                        if (x < -0.2) {
-                            p2.left = true;
-                        } else {
-                            p2.left = false;
-                        }
-
-                        if (x > 0.2) {
-                            p2.right = true;
-                        } else {
-                            p2.right = false;
-                        }
+                // R2 = accelerate, L2 = brake
+                if (c.getIdentifier() == Component.Identifier.Axis.RY) {
+                    double trigger = c.getPollData();
+                    if (trigger > 0.1) {
+                        p1.boosting = false;       // R2 is driving, not boosting
+                        p1.driveForward(trigger);
+                    } else if (trigger < -0.1) {
+                        p1.brake(trigger);         // L2
                     }
-                    if (c.getIdentifier() == Component.Identifier.Button._2) {
-                        if (c.getPollData() > 0) {
-                            p2.boosting = true;
-                            p2.boost();
-                        }
-                    }
-                    // jump button
-                    if (c.getIdentifier() == Component.Identifier.Button._1) {
+                }
+                // R1 = turn/angle right
+                if (c.getIdentifier() == Component.Identifier.Button._5) {
+                    if (c.getPollData() > 0) p1.turnRight();
+                }
+                // L1 = turn/angle left
+                if (c.getIdentifier() == Component.Identifier.Button._4) {
+                    if (c.getPollData() > 0) p1.turnLeft();
+                }
 
-                        if (c.getPollData() > 0) {
-                            p2.jump();
-                        }
+                // circle/square = boost
+                if (c.getIdentifier() == Component.Identifier.Button._2) {
+                    if (c.getPollData() > 0) {
+                        p1.boosting = true;
+                        p1.boost();
                     }
-                    
+                }
+
+                // cross = jump
+                if (c.getIdentifier() == Component.Identifier.Button._1) {
+                    if (c.getPollData() > 0) p1.jump();
                 }
             }
+            p1.tilt(stickX1); // apply tilt once per frame after reading stick
+        }
+
+        if (gamepad2 != null) {
+            gamepad2.poll();
+            double stickX2 = 0;
+            for (Component c : gamepad2.getComponents()) {
+                if (c.getIdentifier() == Component.Identifier.Axis.RY) {
+                    double trigger = c.getPollData();
+                    if (trigger > 0.1) {
+                        p2.boosting = false;
+                        p2.driveForward(trigger);
+                    } else if (trigger < -0.1) {
+                        p2.brake(trigger);
+                    }
+                }
+                
+                if (c.getIdentifier() == Component.Identifier.Axis.X) {
+                    stickX2 = c.getPollData();
+                    if (stickX2 < -0.2) {
+                        p2.facingRight = false;
+                        p2.left = true;
+                        p2.right = false;
+                    } else if (stickX2 > 0.2) {
+                        p2.facingRight = true;
+                        p2.right = true;
+                        p2.left = false;
+                    } else {
+                        p2.left = false;
+                        p2.right = false;
+                    }
+                }
+                
+                // R1 = turn/angle right
+                if (c.getIdentifier() == Component.Identifier.Button._5) {
+                    if (c.getPollData() > 0)
+                    	p2.turnRight();
+                }
+                // L1 = turn/angle left
+                if (c.getIdentifier() == Component.Identifier.Button._4) {
+                    if (c.getPollData() > 0) 
+                    	p2.turnLeft();
+                }
+
+                if (c.getIdentifier() == Component.Identifier.Button._2) {
+                    if (c.getPollData() > 0) {
+                        p2.boosting = true;
+                        p2.boost();
+                    }
+                }
+                if (c.getIdentifier() == Component.Identifier.Button._1) {
+                    if (c.getPollData() > 0) 
+                    	p2.jump();
+                }
+            }
+            p2.tilt(stickX2);
         }
     }
 
@@ -220,6 +267,18 @@ public class GamePanel extends JPanel implements KeyListener {
      * update game logic
      */
     public void updateGame() {
+    	 if (gamepad1 == null) {
+    	        p1.left  = kb_p1_left;
+    	        p1.right = kb_p1_right;
+    	        if (kb_p1_left)  p1.facingRight = false;
+    	        if (kb_p1_right) p1.facingRight = true;
+    	    }
+    	    if (gamepad2 == null) {
+    	        p2.left  = kb_p2_left;
+    	        p2.right = kb_p2_right;
+    	        if (kb_p2_left)  p2.facingRight = false;
+    	        if (kb_p2_right) p2.facingRight = true;
+    	    }
         checkGoal();
         if (AI_MODE) {
 
@@ -455,7 +514,24 @@ public class GamePanel extends JPanel implements KeyListener {
        g2.drawLine(1190, 550, 1220, 390); // top line
        //left ramp
        g2.drawLine(180, 560, 110, 550); //bottom line
-       g2.drawLine(130, 560, 80, 420); // top line
+       g2.drawLine(110, 550, 80, 390); // top line
+       
+    // P1 boost bar (bottom left)
+       g2.setColor(Color.DARK_GRAY);
+       g2.fillRoundRect(60, 640, 200, 20, 10, 10);         // background
+       g2.setColor(new Color(0, 180, 255));                  // blue fill
+       g2.fillRoundRect(60, 640, (int)(200 * (p1.boost / 100.0)), 20, 10, 10);
+       g2.setColor(Color.WHITE);
+       g2.setFont(new Font("Arial", Font.BOLD, 14));
+       g2.drawString("BOOST", 62, 658);
+
+       // P2 boost bar (bottom right)
+       g2.setColor(Color.DARK_GRAY);
+       g2.fillRoundRect(1050, 640, 200, 20, 10, 10);        // background
+       g2.setColor(new Color(255, 140, 0));                  // orange fill
+       g2.fillRoundRect(1050, 640, (int)(200 * (p2.boost / 100.0)), 20, 10, 10);
+       g2.setColor(Color.WHITE);
+       g2.drawString("BOOST", 1052, 658);
 
         // Draw the players
         p1.draw(g2);
@@ -466,27 +542,31 @@ public class GamePanel extends JPanel implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
     if (delay >= 4000) {
+    	 if( gamepad1 == null) {
     	//player 1 keyinputs
         if (e.getKeyCode() == KeyEvent.VK_A) 
-            p1.left = true;
+        	kb_p1_left = true;
         if (e.getKeyCode() == KeyEvent.VK_D)
-            p1.right = true;
+        	kb_p1_right = true;
         if (e.getKeyCode() == KeyEvent.VK_W)
         	p1.jump();
         if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
         	p1.boosting = true;
         	p1.boost();
         }
+        }
+     if(gamepad2 == null) {
         //player 2 key inputs
         if (e.getKeyCode() == KeyEvent.VK_LEFT) 
-            p2.left = true;
+        	 kb_p2_left = true;
         if (e.getKeyCode() == KeyEvent.VK_RIGHT)
-            p2.right = true;
+        	kb_p2_right = true;
         if (e.getKeyCode() == KeyEvent.VK_UP)
             p2.jump();
         if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
             p2.boosting = true;
             p2.boost();
+        }
         }
     }
     }
@@ -495,14 +575,14 @@ public class GamePanel extends JPanel implements KeyListener {
     public void keyReleased(KeyEvent e) {
     	//player 1 key inputs
     	  if (e.getKeyCode() == KeyEvent.VK_A) 
-              p1.left = false;
+    		  kb_p1_left = false;
           if (e.getKeyCode() == KeyEvent.VK_D)
-              p1.right = false;
+        	  kb_p1_right = false;
           //player 2 key inputs
           if (e.getKeyCode() == KeyEvent.VK_LEFT) 
-              p2.left = false;
+        	  kb_p2_left = false;
           if (e.getKeyCode() == KeyEvent.VK_RIGHT)
-              p2.right = false;
+        	  kb_p2_right = false;
     }
 
     @Override
