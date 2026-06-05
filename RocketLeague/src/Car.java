@@ -75,10 +75,9 @@ public class Car {
         }
 
         // recharge boost
-        if (!boosting && boost < 100) {
+        if (!boosting && boost < 100 && onGround) {
             boost += 10;
         }
-        boosting = false;
     }
 
     /**
@@ -111,7 +110,6 @@ public class Car {
         double pivotX = x + width / 2.0;
         double pivotY = y;
         g2.rotate(Math.toRadians(angle), pivotX, pivotY);
-
         if (facingRight) {
             g2.drawImage(carImage, x, y - 20, width, height, null);
             if (isBoosting()) {
@@ -163,11 +161,12 @@ public class Car {
     // actually does the boosting
     public void boost() {
         if (boost > minboost) {
+        	boosting = true;
             double rad = Math.toRadians(angle);
             if (facingRight) {
-                vx += Math.cos(rad) * 1.5; // reduced from 4
+                vx += Math.cos(rad) * 1.2; // reduced from 4
             } else {
-                vx -= Math.cos(rad) * 1.5;
+                vx -= Math.cos(rad) * 1.2;
             }
             vy += Math.sin(rad) * 1.2;
             vy -= 0.5; // reduced from 1.5

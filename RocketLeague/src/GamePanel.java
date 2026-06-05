@@ -3,6 +3,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.QuadCurve2D;
 import java.lang.reflect.Field;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.concurrent.Delayed;
 import net.java.games.input.Controller;
@@ -74,6 +75,7 @@ public class GamePanel extends JPanel implements KeyListener {
     private boolean kb_p1_left, kb_p1_right;
     private boolean kb_p2_left, kb_p2_right;
 
+    String playerscored = null;
     
     // ramp arraylist for coordinates
     ArrayList<Slope> slopes = new ArrayList<>();
@@ -88,6 +90,7 @@ public class GamePanel extends JPanel implements KeyListener {
     	ballImg = new ImageIcon("ballimg.png").getImage();
     	int p1Ground = (int) getFloorHeight(300);
     	int p2Ground = (int) getFloorHeight(900); // ground level for cars
+    	
 
         p1 = new Car(300,p1Ground, p1Ground, Color.BLUE,"boost.png", "bluecar.png", this); //player 1 car
         p2 = new Car(900, p2Ground, p2Ground, Color.ORANGE,"boost.png", "orangecar.png", this); //player 2 car
@@ -108,8 +111,10 @@ public class GamePanel extends JPanel implements KeyListener {
         // Initialize Controller
         initController();
 
-        Timer timer = new Timer(16, totaltime -> { // game loop
-            updateGame();
+        Timer timer = new Timer(16, e -> { // game loop
+        	if ( Gametimer > 0) { 
+        	updateGame();
+        	}
             repaint();
             delay+=16;
             Gametimer-= 16;
@@ -201,7 +206,8 @@ public class GamePanel extends JPanel implements KeyListener {
 
                 // cross = jump
                 if (c.getIdentifier() == Component.Identifier.Button._1) {
-                    if (c.getPollData() > 0) p1.jump();
+                    if (c.getPollData() > 0) 
+                    	p1.jump();
                 }
             }
             p1.tilt(stickX1); // apply tilt once per frame after reading stick
@@ -248,13 +254,13 @@ public class GamePanel extends JPanel implements KeyListener {
                     	p2.turnLeft();
                 }
 
-                if (c.getIdentifier() == Component.Identifier.Button._2) {
+                if (c.getIdentifier() == Component.Identifier.Button._1) {
                     if (c.getPollData() > 0) {
                         p2.boosting = true;
                         p2.boost();
                     }
                 }
-                if (c.getIdentifier() == Component.Identifier.Button._1) {
+                if (c.getIdentifier() == Component.Identifier.Button._0) {
                     if (c.getPollData() > 0) 
                     	p2.jump();
                 }
@@ -386,9 +392,14 @@ public class GamePanel extends JPanel implements KeyListener {
      * Keeps car inside the field 
      */
     public void clamp(Car c) {
-        if (c.x < LEFT) c.x = LEFT;
-        if (c.x > RIGHT - 120) c.x = RIGHT - 120;
+        if (c.x < LEFT)
+        	c.x = LEFT;
+        if (c.x > RIGHT - 120)
+        	c.x = RIGHT - 120;
+        if (c.y <= TOP)
+        	c.y = TOP;
     }
+    
     
     public void handleCollision(Car c) {
         // center of car
@@ -426,7 +437,12 @@ public class GamePanel extends JPanel implements KeyListener {
         p1.vx = 0;
         p2.vx = 0;
     }
+    
+    /*
+     * checks if goal was scored
+     */
     public void checkGoal() {
+    	
         // Left goal (Player 2 scores)
         if (ballX < LEFT_GOAL_X && ballY > GOAL_TOP && ballY < GOAL_BOTTOM) {
             scoreP2++;
@@ -434,6 +450,8 @@ public class GamePanel extends JPanel implements KeyListener {
             resetplayers();
             goalscored = true;
             delay = 0;
+            playerscored = "Player 2"; 
+            
         }
 
         // Right goal (Player 1 scores)
@@ -443,8 +461,27 @@ public class GamePanel extends JPanel implements KeyListener {
             resetplayers();
             goalscored = true;
             delay = 0;
+            playerscored = "Player 1"; 
         }
+        
     }
+    
+    
+    public String winner() {
+    	String winner = null;
+    	if (Gametimer <= 0) {
+    		if(scoreP1 > scoreP2)
+    			winner = "Player 1";
+    		else if(scoreP1 < scoreP2)
+			winner = "Player 2";	
+    		else if(scoreP1 == scoreP2)
+    			winner = "tie";
+    	}
+		return winner;
+    		
+    }
+    
+    
 
     /**
      * Draws field, background, and players 
@@ -488,15 +525,27 @@ public class GamePanel extends JPanel implements KeyListener {
         // Score Board
         g2.setColor(Color.WHITE);
         g2.setFont(new Font("Arial", Font.BOLD, 30));
-        g2.drawString("BLUE: " + scoreP1, 300, 50);
+        
+        if (Gametimer > 0 ) {
+        g.drawString("BLUE: " + scoreP1, 300, 50);
         g2.drawString("ORANGE: " + scoreP2, 800, 50);
+        }
        if(delay < delaymax) {
     	   g2.drawString("Timer: " + (int) (4 -(delay/1000)), 600, 50);
-       } else {
+       } else if (Gametimer > 0){
     	   int totalSeconds = (int)(Gametimer / 1000);
     	   int minutes = totalSeconds / 60;
     	   int seconds = totalSeconds % 60;
     	   g2.drawString("Timer: " + minutes + ":" + String.format("%02d", seconds), 600, 50);
+       }
+       else if (Gametimer < 0) {
+    	   Font largeFont = new Font("Arial", Font.BOLD, 50);
+    	   g.setFont(largeFont);
+    	   g2.drawString("Final score: " + scoreP1 + ":" + scoreP2, 400, 250);
+    	   g2.drawString("Winner is: " + winner(), 400, 350);
+       }
+       if (goalscored == true && delay <= 4000) {
+    	   g2.drawString("Goal Score by: " + playerscored, 400, 350);
        }
         
         // ball
@@ -510,11 +559,11 @@ public class GamePanel extends JPanel implements KeyListener {
        // g2.fillRect(RIGHT_GOAL_X, GOAL_TOP, 20, GOAL_BOTTOM - GOAL_TOP);
        
      //right ramp
-       g2.drawLine(1120, 560, 1190, 550);// bottom line
-       g2.drawLine(1190, 550, 1220, 390); // top line
+       //g2.drawLine(1120, 560, 1190, 550);// bottom line
+      // g2.drawLine(1190, 550, 1220, 390); // top line
        //left ramp
-       g2.drawLine(180, 560, 110, 550); //bottom line
-       g2.drawLine(110, 550, 80, 390); // top line
+      // g2.drawLine(180, 560, 110, 550); //bottom line
+     //  g2.drawLine(110, 550, 80, 390); // top line
        
     // P1 boost bar (bottom left)
        g2.setColor(Color.DARK_GRAY);
