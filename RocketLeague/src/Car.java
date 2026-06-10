@@ -6,6 +6,7 @@ import javax.swing.ImageIcon;
 public class Car {
 	Image carImage; // car photo
 	Image boostImage; // boost image
+	Image goalexplosion;
     int x, y; // position
     int speed = 6; // Movement speed
     int startx, starty;
@@ -26,7 +27,7 @@ public class Car {
     /**
      * Constructor
      */
-    public Car(int x, int y, int groundY, Color color,String boostimg, String imagePath, GamePanel panel) {
+    public Car(int x, int y, int groundY, Color color,String boostimg, String imagePath,String goalexplo, GamePanel panel) {
         this.x = x;
         this.y = y;
         this.groundY = groundY;
@@ -37,6 +38,7 @@ public class Car {
         
         boostImage = new ImageIcon(boostimg).getImage();
         carImage = new ImageIcon(imagePath).getImage();
+        goalexplosion = new ImageIcon(goalexplo).getImage();
     }
     
     public void tilt(double stickX1) {
@@ -69,14 +71,14 @@ public class Car {
             y = (int) ground;
             vy = 0;
             onGround = true;
-            angle *= 0.7;
+            angle *= 0.7; 
         } else {
             onGround = false;
         }
 
         // recharge boost
         if (!boosting && boost < 100 && onGround) {
-            boost += 10;
+            boost += 10; // change value depending on how competitive you want the game.
         }
     }
 
@@ -142,7 +144,7 @@ public class Car {
     }
 
     public void setAngle(double d) {
-        this.angle = Math.max(-90, Math.min(90, d)); // clamp so you can't flip upside down
+        this.angle = Math.max(-90, Math.min(90, d)); // clamp so you can't flip upside down only 90 degrees!
     }
 
     public void jump() {
@@ -158,25 +160,29 @@ public class Car {
         return boosting;
     }
     
+   // public void drawexplo(Image ) {
+    	
+   // }
+    
     // actually does the boosting
     public void boost() {
         if (boost > minboost) {
         	boosting = true;
             double rad = Math.toRadians(angle);
             if (facingRight) {
-                vx += Math.cos(rad) * 1.2; // reduced from 4
+                vx += Math.cos(rad) * 1.2; // every tap of r1/l1 will return the car angle to a angle 20 percent higher
             } else {
-                vx -= Math.cos(rad) * 1.2;
+                vx -= Math.cos(rad) * 1.2; // every tap of r1/l1 will return the car angle to a angle 20 percent higher
             }
             vy += Math.sin(rad) * 1.2;
-            vy -= 0.5; // reduced from 1.5
+            vy -= 0.5;
             boost -= boostcost;
         }
     }
 
     // faster turning with L1/R1
     public void turnLeft() {
-        angle -= 6; // increase this number for even faster turning
+        angle -= 6; 
         angle = Math.max(-90, Math.min(90, angle));
     }
 

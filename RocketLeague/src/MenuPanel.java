@@ -26,7 +26,7 @@ public class MenuPanel extends JPanel implements MouseListener {
         // draw menu image
         g2.drawImage(bg, 0, 0, getWidth(), getHeight(), this);
         
-        //dummy testers
+        //dummy testers for sections size
         //g2.fillRect(playButton.x, playButton.y, playButton.width, playButton.height);
         //g2.fillRect(infoButton.x, infoButton.y, infoButton.width, infoButton.height);
         //g2.fillRect(AI_Button.x, infoButton.y, infoButton.width, infoButton.height);
@@ -39,10 +39,22 @@ public class MenuPanel extends JPanel implements MouseListener {
 
         if (playButton.contains(p)) {
             System.out.println("Play clicked");
+            String playerName1 = JOptionPane.showInputDialog(
+                    null,
+                    "Enter your name:",
+                    "Player Name",
+                    JOptionPane.PLAIN_MESSAGE
+            );
+            String playerName2 = JOptionPane.showInputDialog(
+                    null,
+                    "Enter your name:",
+                    "Player Name",
+                    JOptionPane.PLAIN_MESSAGE
+            );
 
             // switch to game
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            GamePanel game = new GamePanel();
+            GamePanel game = new GamePanel(playerName1,playerName2);
             frame.setContentPane(game);
             frame.revalidate();
             frame.repaint();
@@ -80,15 +92,30 @@ public class MenuPanel extends JPanel implements MouseListener {
                 options,
                 options[0]
             );
+            String playerName1 = JOptionPane.showInputDialog(
+                    null,
+                    "Enter your name:",
+                    "Player Name",
+                    JOptionPane.PLAIN_MESSAGE
+            );
+            String playerName2 = JOptionPane.showInputDialog(
+                    null,
+                    "Enter your Ai's name:",
+                    "Ai name",
+                    JOptionPane.PLAIN_MESSAGE
+            );
 
-            if (choice == 0) GamePanel.AI_DIFFICULTY = "EASY";
-            if (choice == 1) GamePanel.AI_DIFFICULTY = "MEDIUM";
-            if (choice == 2) GamePanel.AI_DIFFICULTY = "HARD";
+            if (choice == 0) 
+            	GamePanel.AI_DIFFICULTY = "EASY";
+            if (choice == 1) 
+            	GamePanel.AI_DIFFICULTY = "MEDIUM";
+            if (choice == 2)
+            	GamePanel.AI_DIFFICULTY = "HARD";
 
             GamePanel.AI_MODE = true;
 
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            GamePanel game = new GamePanel();
+            GamePanel game = new GamePanel(playerName1,playerName2);
 
             frame.setContentPane(game);
             frame.revalidate();
